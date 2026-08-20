@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>甲狀腺追蹤日誌</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #F7F5F0;
+  --surface: #FFFFFF;
+  --surface2: #F0EDE8;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #1A1A1A;
+  --text2: #5A5A5A;
+  --text3: #9A9A9A;
+  --accent: #2D5A8E;
+  --accent-light: #E8F0F9;
+  --danger: #C0392B;
+  --danger-light: #FDECEA;
+  --warn: #B7770D;
+  --warn-light: #FEF3DC;
+  --ok: #1E7A4A;
+  --ok-light: #E8F5EE;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.06);
+  --font: 'Noto Sans TC', sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  max-width: 480px;
+  margin: 0 auto;
+  padding-bottom: 80px;
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Header */
+.header {
+  background: var(--surface);
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.header-icon {
+  width: 36px; height: 36px;
+  background: var(--accent-light);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+}
+.header-title { font-size: 18px; font-weight: 700; color: var(--text); }
+.header-sub { font-size: 12px; color: var(--text3); padding-left: 46px; }
+
+/* Bottom Nav */
+.nav {
+  position: fixed;
+  bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 100%; max-width: 480px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 100;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.nav-btn {
+  flex: 1;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 10px 4px 8px;
+  gap: 3px;
+  border: none; background: none; cursor: pointer;
+  color: var(--text3);
+  font-family: var(--font);
+  font-size: 10px;
+  transition: color 0.15s;
+}
+.nav-btn.active { color: var(--accent); }
+.nav-icon { font-size: 22px; line-height: 1; }
+
+/* Sections */
+.section { display: none; padding: 16px; }
+.section.active { display: block; }
+
+/* Cards */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.card-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+.card-label {
+  font-size: 12px; font-weight: 500;
+  color: var(--text2);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+
+/* Metric rows */
+.metric-row {
+  display: flex; align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.metric-row:last-child { border-bottom: none; padding-bottom: 0; }
+.metric-row:first-child { padding-top: 0; }
+.metric-info { flex: 1; }
+.metric-name { font-size: 14px; font-weight: 500; color: var(--text); }
+.metric-en { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-top: 1px; }
+.metric-ref { font-size: 11px; color: var(--text3); margin-top: 2px; }
+.metric-vals { text-align: right; }
+.metric-val { font-size: 16px; font-weight: 700; font-family: var(--mono); }
+.metric-date { font-size: 10px; color: var(--text3); }
+.badge {
+  display: inline-block;
+  font-size: 10px; font-weight: 500;
+  padding: 2px 7px; border-radius: 20px;
+  margin-left: 6px; vertical-align: middle;
+}
+.badge-ok { background: var(--ok-light); color: var(--ok); }
+.badge-high { background: var(--danger-light); color: var(--danger); }
+.badge-warn { background: var(--warn-light); color: var(--warn); }
+
+/* Two-column compare */
+.compare-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 10px; margin-top: 8px;
+}
+.compare-col {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+}
+.compare-hospital { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.compare-date { font-size: 10px; color: var(--text3); }
+.compare-val { font-size: 18px; font-weight: 700; font-family: var(--mono); }
+.compare-name { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+/* Summary strip */
+.summary-strip {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 8px; margin-bottom: 12px;
+}
+.strip-item {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 12px 8px;
+  text-align: center;
+  box-shadow: var(--shadow);
+}
+.strip-val { font-size: 20px; font-weight: 700; font-family: var(--mono); }
+.strip-label { font-size: 10px; color: var(--text3); margin-top: 2px; }
+
+/* Timeline */
+.timeline-item {
+  display: flex; gap: 12px;
+  margin-bottom: 0;
+}
+.timeline-line {
+  display: flex; flex-direction: column; align-items: center;
+  width: 20px; flex-shrink: 0;
+}
+.timeline-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+  background: var(--accent); flex-shrink: 0; margin-top: 3px;
+}
+.timeline-dot.future {
+  background: var(--surface);
+  border: 2px solid var(--accent);
+}
+.timeline-connector {
+  width: 2px; background: var(--border2);
+  flex: 1; margin: 4px 0;
+  min-height: 20px;
+}
+.timeline-body { flex: 1; padding-bottom: 20px; }
+.timeline-date { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.timeline-title { font-size: 14px; font-weight: 600; margin: 2px 0 4px; }
+.timeline-desc { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* Alert card */
+.alert-card {
+  background: var(--warn-light);
+  border: 1px solid rgba(183,119,13,0.2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  display: flex; gap: 10px; align-items: flex-start;
+}
+.alert-icon { font-size: 20px; flex-shrink: 0; }
+.alert-title { font-size: 13px; font-weight: 600; color: var(--warn); margin-bottom: 2px; }
+.alert-body { font-size: 13px; color: var(--text2); line-height: 1.6; }
+
+/* Log form */
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 6px; display: block; }
+input[type="date"], input[type="text"], select, textarea {
+  width: 100%;
+  font-family: var(--font);
+  font-size: 15px;
+  padding: 12px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  appearance: none;
+  -webkit-appearance: none;
+  outline: none;
+  transition: border-color 0.15s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+textarea { min-height: 80px; resize: vertical; line-height: 1.6; }
+.type-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.type-btn {
+  border: 1.5px solid var(--border2);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 8px 4px;
+  text-align: center;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: all 0.15s;
+}
+.type-btn .type-icon { font-size: 18px; display: block; }
+.type-btn .type-name { font-size: 10px; color: var(--text2); margin-top: 2px; display: block; }
+.type-btn.selected {
+  border-color: var(--accent);
+  background: var(--accent-light);
+}
+.type-btn.selected .type-name { color: var(--accent); }
+.submit-btn {
+  width: 100%;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  padding: 16px;
+  font-size: 16px; font-weight: 600;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 4px;
+}
+.submit-btn:active { opacity: 0.85; }
+
+/* Log entries */
+.log-entry {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow);
+}
+.log-entry-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 8px;
+}
+.log-entry-date { font-size: 12px; font-weight: 600; color: var(--accent); font-family: var(--mono); }
+.log-entry-type {
+  font-size: 11px; padding: 2px 8px;
+  background: var(--surface2); border-radius: 20px;
+  color: var(--text2);
+}
+.log-field { margin-bottom: 6px; }
+.log-field-label { font-size: 11px; color: var(--text3); }
+.log-field-val { font-size: 13px; color: var(--text); line-height: 1.5; }
+.delete-btn {
+  background: none; border: none;
+  font-size: 16px; cursor: pointer;
+  color: var(--text3); padding: 4px;
+}
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--text3); font-size: 14px;
+}
+.empty-icon { font-size: 40px; display: block; margin-bottom: 8px; }
+
+/* Ref section */
+.ref-item {
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin-bottom: 10px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.ref-header {
+  padding: 14px 16px;
+  display: flex; justify-content: space-between; align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.ref-header-left { display: flex; gap: 10px; align-items: center; }
+.ref-pill {
+  font-size: 11px; font-weight: 600; padding: 3px 9px;
+  border-radius: 20px; font-family: var(--mono);
+  white-space: nowrap;
+}
+.ref-name { font-size: 14px; font-weight: 500; }
+.ref-arrow { font-size: 14px; color: var(--text3); transition: transform 0.2s; }
+.ref-item.open .ref-arrow { transform: rotate(90deg); }
+.ref-body {
+  display: none;
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--border);
+}
+.ref-item.open .ref-body { display: block; }
+.ref-row {
+  display: flex; gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.ref-row:last-child { border-bottom: none; padding-bottom: 0; }
+.ref-row-label { color: var(--text3); width: 56px; flex-shrink: 0; padding-top: 1px; }
+.ref-row-val { color: var(--text); line-height: 1.6; flex: 1; }
+
+/* Section title */
+.section-title {
+  font-size: 13px; font-weight: 600;
+  color: var(--text3); text-transform: uppercase;
+  letter-spacing: 0.08em; margin-bottom: 10px; margin-top: 4px;
+}
+
+/* Filter pills */
+.filter-row {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+}
+.filter-pill {
+  padding: 6px 14px; border-radius: 20px;
+  border: 1.5px solid var(--border2);
+  background: var(--surface);
+  font-size: 12px; cursor: pointer;
+  font-family: var(--font);
+  color: var(--text2);
+  transition: all 0.15s;
+}
+.filter-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* Trend indicator */
+.trend { font-size: 13px; }
+.trend-up { color: var(--danger); }
+.trend-down { color: var(--ok); }
+.trend-stable { color: var(--text3); }
+
+/* Scrollable history table */
+.history-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.history-table { width: 100%; min-width: 400px; border-collapse: collapse; font-size: 12px; }
+.history-table th {
+  padding: 8px 10px; text-align: left;
+  background: var(--surface2); color: var(--text2); font-weight: 500;
+  white-space: nowrap; position: sticky; top: 0;
+}
+.history-table td {
+  padding: 10px 10px; border-bottom: 1px solid var(--border);
+  font-family: var(--mono); white-space: nowrap;
+}
+.history-table tr:last-child td { border-bottom: none; }
+
+.tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 4px; font-weight: 500; }
+
+/* Simplified form styles */
+.form-sep {
+  font-size: 12px; font-weight: 600;
+  color: var(--text3); letter-spacing: 0.06em;
+  margin: 18px 0 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.form-row-inline {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 8px;
+}
+.form-inline-label {
+  font-size: 13px; color: var(--text2);
+  width: 32px; flex-shrink: 0;
+}
+.form-row-inline input {
+  flex: 1; padding: 10px 12px; font-size: 14px;
+}
+
+/* Form blocks */
+.form-block {
+  background: var(--surface2);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.form-block-title {
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  margin-bottom: 12px; letter-spacing: 0.02em;
+}
+.form-block .form-group { margin-bottom: 10px; }
+.form-block .form-group:last-child { margin-bottom: 0; }
+.form-block input[type="text"],
+.form-block input[type="time"],
+.form-block textarea {
+  background: var(--surface);
+}
+
+/* Checkbox rows */
+.check-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px;
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.1s;
+}
+.check-row:active { background: var(--accent-light); }
+.check-box {
+  width: 26px; height: 26px; border-radius: 8px;
+  border: 2px solid var(--border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: white;
+  flex-shrink: 0;
+  transition: background 0.15s, border-color 0.15s;
+}
+.check-box.checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.check-label { font-size: 15px; color: var(--text); flex: 1; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="header-icon">🦋</div>
+    <div class="header-title">甲狀腺追蹤日誌</div>
+  </div>
+  <div class="header-sub">曹心怡醫師 · 國泰醫院內分泌科 · 初診 2026/5/14</div>
+</div>
+
+<!-- === 首頁 === -->
+<div id="sec-home" class="section active">
+
+  <div style="margin-bottom:12px; margin-top:4px">
+    <div class="alert-card">
+      <div class="alert-icon">📅</div>
+      <div>
+        <div class="alert-title">下次回診提醒</div>
+        <div class="alert-body">
+          <strong>2027/2/17</strong> 門診回診（每半年一次）
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-title">最新數值 · 2026/8/13 國泰</div>
+  <div class="summary-strip">
+    <div class="strip-item">
+      <div class="strip-val" style="color:var(--text)">3.45</div>
+      <div class="strip-label">TSH</div>
+    </div>
+    <div class="strip-item">
+      <div class="strip-val" style="color:var(--text)">1.17</div>
+      <div class="strip-label">Free T4</div>
+    </div>
+    <div class="strip-item">
+      <div class="strip-val" style="color:var(--text3)">—</div>
+      <div class="strip-label">TSH-R Ab</div>
+    </div>
+  </div>
+
+  <div class="section-title">所有指標對照</div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <!-- 欄位標題 -->
+    <div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:0;background:var(--surface2);padding:8px 14px;border-bottom:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--text3);font-weight:500">指標</div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;font-weight:500">台大<br>4/25</div>
+      <div style="font-size:11px;color:var(--text3);text-align:center;font-weight:500">國泰<br>5/15</div>
+      <div style="font-size:11px;color:var(--accent);text-align:center;font-weight:600">國泰<br>8/13</div>
+    </div>
+    <!-- TSH -->
+    <div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:0;padding:12px 14px;border-bottom:1px solid var(--border);align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:500">TSH <span class="badge badge-ok">✓</span></div>
+        <div style="font-size:10px;color:var(--text3)">標準 0.35–4.94</div>
+      </div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--danger)">5.29</div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--ok)">3.72</div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--ok)">3.45</div>
+    </div>
+    <!-- Free T4 -->
+    <div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:0;padding:12px 14px;border-bottom:1px solid var(--border);align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:500">Free T4 <span class="badge badge-ok">✓</span></div>
+        <div style="font-size:10px;color:var(--text3)">標準 0.70–1.48</div>
+      </div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--ok)">1.23</div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--ok)">1.25</div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--ok)">1.17</div>
+    </div>
+    <!-- Anti-TPO -->
+    <div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:0;padding:12px 14px;border-bottom:1px solid var(--border);align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:500">TPO Ab <span class="badge badge-warn">留意</span></div>
+        <div style="font-size:10px;color:var(--text3)">標準 &lt;34</div>
+      </div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--danger)">44.47</div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--ok)">20.4</div>
+      <div style="text-align:center;font-size:13px;color:var(--text3)">—</div>
+    </div>
+    <!-- TgAb -->
+    <div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:0;padding:12px 14px;border-bottom:1px solid var(--border);align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:500">TgAb <span class="badge badge-high">↑↑</span></div>
+        <div style="font-size:10px;color:var(--text3)">標準 &lt;115</div>
+      </div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--danger)">492.5</div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--danger)">276.6</div>
+      <div style="text-align:center;font-size:13px;color:var(--text3)">—</div>
+    </div>
+    <!-- TSH-R Ab -->
+    <div style="display:grid;grid-template-columns:1fr 60px 60px 60px;gap:0;padding:12px 14px;align-items:center">
+      <div>
+        <div style="font-size:13px;font-weight:500">TSH-R Ab <span class="badge badge-high">↑↑</span></div>
+        <div style="font-size:10px;color:var(--text3)">標準 &lt;1.75</div>
+      </div>
+      <div style="text-align:center;font-size:13px;color:var(--text3)">—</div>
+      <div style="text-align:center;font-size:14px;font-weight:700;font-family:var(--mono);color:var(--danger)">11.4</div>
+      <div style="text-align:center;font-size:13px;color:var(--text3)">—</div>
+    </div>
+  </div>
+
+  <div class="section-title">診療時間軸</div>
+  <div class="card" style="padding:16px 16px 4px">
+    <div class="timeline-item">
+      <div class="timeline-line">
+        <div class="timeline-dot"></div>
+        <div class="timeline-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-date">2026 / 04 / 25</div>
+        <div class="timeline-title">台大醫院健康檢查</div>
+        <div class="timeline-desc">發現甲狀腺腫脹，TSH 5.29 偏高，TgAb 492.5 明顯偏高</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-line">
+        <div class="timeline-dot"></div>
+        <div class="timeline-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-date">2026 / 05 / 14</div>
+        <div class="timeline-title">國泰初診 · 曹心怡醫師</div>
+        <div class="timeline-desc">觸診確認、抽血、預約超音波</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-line">
+        <div class="timeline-dot"></div>
+        <div class="timeline-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-date">2026 / 05 / 21</div>
+        <div class="timeline-title">第一次複診</div>
+        <div class="timeline-desc">醫師確認血液尚可通過甲狀腺；安排 8/13 抽血、8/20 超音波門診</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-line">
+        <div class="timeline-dot"></div>
+        <div class="timeline-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-date">2026 / 08 / 13</div>
+        <div class="timeline-title">抽血追蹤</div>
+        <div class="timeline-desc">TSH 3.45 ✓ ｜ Free T4 1.17 ✓ — 兩項均正常</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-line">
+        <div class="timeline-dot"></div>
+        <div class="timeline-connector"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-date">2026 / 08 / 20</div>
+        <div class="timeline-title">第二次複診 · 曹心怡醫師</div>
+        <div class="timeline-desc">甲狀腺目前穩定；超音波顯示顏色較旁邊肌肉淡。改為每半年回診一次。</div>
+      </div>
+    </div>
+    <div class="timeline-item">
+      <div class="timeline-line">
+        <div class="timeline-dot future"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-date">2027 / 02 / 17（預定）</div>
+        <div class="timeline-title">第三次複診</div>
+        <div class="timeline-desc">半年追蹤回診</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- === 日誌記錄 === -->
+<div id="sec-log" class="section">
+
+  <div class="card" style="padding:20px">
+    <div class="section-title" style="margin-bottom:16px">今日記錄</div>
+
+    <!-- 日期 -->
+    <div class="form-group">
+      <label class="form-label">📅 日期</label>
+      <input type="date" id="log-date">
+    </div>
+
+    <!-- 飲食 -->
+    <div class="form-sep">🥗 飲食</div>
+    <div class="form-row-inline">
+      <span class="form-inline-label">早餐</span>
+      <input type="text" id="food-breakfast" placeholder="內容">
+    </div>
+    <div class="form-row-inline">
+      <span class="form-inline-label">午餐</span>
+      <input type="text" id="food-lunch" placeholder="內容">
+    </div>
+    <div class="form-row-inline" style="margin-bottom:0">
+      <span class="form-inline-label">晚餐</span>
+      <input type="text" id="food-dinner" placeholder="內容">
+    </div>
+
+    <!-- 作息 -->
+    <div class="form-sep">🌙 作息</div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+      <div>
+        <label class="form-label">起床時間</label>
+        <input type="time" id="wake-time">
+      </div>
+      <div>
+        <label class="form-label">就寢時間</label>
+        <input type="time" id="sleep-time">
+      </div>
+    </div>
+
+    <!-- 運動 & 用藥 -->
+    <div class="form-sep">✅ 今日完成</div>
+    <div class="check-row" onclick="toggleCheck('ex-check')" style="margin-bottom:8px">
+      <div class="check-box" id="ex-check-box"><span id="ex-check-mark" style="display:none">✓</span></div>
+      <span class="check-label">有運動</span>
+      <input type="hidden" id="ex-check" value="0">
+    </div>
+    <div id="ex-detail" style="display:none; margin-bottom:8px">
+      <input type="text" id="ex-content" placeholder="類型 + 時間，例：快走 30 分鐘">
+    </div>
+    <div class="check-row" onclick="toggleCheck('med-d3')" style="margin-bottom:8px">
+      <div class="check-box" id="med-d3-box"><span id="med-d3-mark" style="display:none">✓</span></div>
+      <span class="check-label">維他命 D3</span>
+      <input type="hidden" id="med-d3" value="0">
+    </div>
+    <div class="check-row" onclick="toggleCheck('med-fish')">
+      <div class="check-box" id="med-fish-box"><span id="med-fish-mark" style="display:none">✓</span></div>
+      <span class="check-label">魚油</span>
+      <input type="hidden" id="med-fish" value="0">
+    </div>
+
+    <!-- 備註 -->
+    <div class="form-sep">📋 症狀 / 備註</div>
+    <textarea id="log-note" placeholder="頸部不適、疲倦感、心跳異常…"></textarea>
+
+    <button class="submit-btn" onclick="addLog()" style="margin-top:16px">💾 儲存今日記錄</button>
+  </div>
+
+  <div style="margin-top:20px">
+    <div class="section-title" style="margin-bottom:10px">歷史記錄</div>
+    <div id="log-list"></div>
+  </div>
+</div>
+
+<!-- === 指標說明 === -->
+<div id="sec-ref" class="section">
+  <div class="section-title">各項指標說明</div>
+
+  <div class="ref-item" onclick="toggleRef(this)">
+    <div class="ref-header">
+      <div class="ref-header-left">
+        <span class="ref-pill" style="background:var(--danger-light);color:var(--danger)">TSH</span>
+        <span class="ref-name">促甲狀腺激素</span>
+      </div>
+      <span class="ref-arrow">›</span>
+    </div>
+    <div class="ref-body">
+      <div class="ref-row"><div class="ref-row-label">標準值</div><div class="ref-row-val">0.35 – 4.94 μIU/mL</div></div>
+      <div class="ref-row"><div class="ref-row-label">英文</div><div class="ref-row-val">Thyroid Stimulating Hormone</div></div>
+      <div class="ref-row"><div class="ref-row-label">意義</div><div class="ref-row-val">腦下垂體分泌的「指令激素」。偏高→甲狀腺可能低下；偏低→可能亢進。</div></div>
+      <div class="ref-row"><div class="ref-row-label">你的數值</div><div class="ref-row-val">4/25：<strong>5.29 ↑</strong>（偏高）→ 5/15：<strong>3.72 ✓</strong>（正常），下降趨勢良好</div></div>
+    </div>
+  </div>
+
+  <div class="ref-item" onclick="toggleRef(this)">
+    <div class="ref-header">
+      <div class="ref-header-left">
+        <span class="ref-pill" style="background:var(--ok-light);color:var(--ok)">T4</span>
+        <span class="ref-name">游離甲狀腺素</span>
+      </div>
+      <span class="ref-arrow">›</span>
+    </div>
+    <div class="ref-body">
+      <div class="ref-row"><div class="ref-row-label">標準值</div><div class="ref-row-val">0.70 – 1.48 ng/dL</div></div>
+      <div class="ref-row"><div class="ref-row-label">英文</div><div class="ref-row-val">Free Thyroxine (Free T4)</div></div>
+      <div class="ref-row"><div class="ref-row-label">意義</div><div class="ref-row-val">反映甲狀腺實際荷爾蒙分泌量。兩次均正常，代表功能目前維持穩定。</div></div>
+      <div class="ref-row"><div class="ref-row-label">你的數值</div><div class="ref-row-val">4/25：<strong>1.23 ✓</strong> → 5/15：<strong>1.25 ✓</strong>，穩定正常</div></div>
+    </div>
+  </div>
+
+  <div class="ref-item" onclick="toggleRef(this)">
+    <div class="ref-header">
+      <div class="ref-header-left">
+        <span class="ref-pill" style="background:var(--warn-light);color:var(--warn)">TPO</span>
+        <span class="ref-name">TPO 抗體</span>
+      </div>
+      <span class="ref-arrow">›</span>
+    </div>
+    <div class="ref-body">
+      <div class="ref-row"><div class="ref-row-label">標準值</div><div class="ref-row-val">&lt; 34 IU/mL</div></div>
+      <div class="ref-row"><div class="ref-row-label">英文</div><div class="ref-row-val">Anti-Thyroid Peroxidase Antibody</div></div>
+      <div class="ref-row"><div class="ref-row-label">意義</div><div class="ref-row-val">自體免疫抗體，升高見於橋本氏甲狀腺炎或葛瑞夫茲病。</div></div>
+      <div class="ref-row"><div class="ref-row-label">你的數值</div><div class="ref-row-val">4/25：<strong>44.47 ↑</strong> → 5/15：<strong>20.4 ✓</strong>（兩院方法不同，仍需追蹤）</div></div>
+    </div>
+  </div>
+
+  <div class="ref-item" onclick="toggleRef(this)">
+    <div class="ref-header">
+      <div class="ref-header-left">
+        <span class="ref-pill" style="background:var(--danger-light);color:var(--danger)">TgAb</span>
+        <span class="ref-name">甲狀腺球蛋白抗體</span>
+      </div>
+      <span class="ref-arrow">›</span>
+    </div>
+    <div class="ref-body">
+      <div class="ref-row"><div class="ref-row-label">標準值</div><div class="ref-row-val">&lt; 115 IU/mL</div></div>
+      <div class="ref-row"><div class="ref-row-label">英文</div><div class="ref-row-val">Thyroglobulin Antibody (TgAb / TGA)</div></div>
+      <div class="ref-row"><div class="ref-row-label">意義</div><div class="ref-row-val">自體免疫指標，明顯升高見於自體免疫性甲狀腺疾病，也用於術後追蹤。</div></div>
+      <div class="ref-row"><div class="ref-row-label">你的數值</div><div class="ref-row-val">4/25：<strong>492.5 ↑↑</strong> → 5/15：<strong>276.6 ↑↑</strong>，下降中，仍明顯偏高</div></div>
+    </div>
+  </div>
+
+  <div class="ref-item" onclick="toggleRef(this)">
+    <div class="ref-header">
+      <div class="ref-header-left">
+        <span class="ref-pill" style="background:var(--danger-light);color:var(--danger)">TSH-R</span>
+        <span class="ref-name">TSH 受體抗體</span>
+      </div>
+      <span class="ref-arrow">›</span>
+    </div>
+    <div class="ref-body">
+      <div class="ref-row"><div class="ref-row-label">標準值</div><div class="ref-row-val">&lt; 1.75 IU/L</div></div>
+      <div class="ref-row"><div class="ref-row-label">英文</div><div class="ref-row-val">TSH Receptor Antibody (TSH-R Ab)</div></div>
+      <div class="ref-row"><div class="ref-row-label">意義</div><div class="ref-row-val">葛瑞夫茲病特異性抗體。此抗體模仿 TSH 刺激甲狀腺，可能導致腫大或功能異常。</div></div>
+      <div class="ref-row"><div class="ref-row-label">你的數值</div><div class="ref-row-val">5/15：<strong>11.4 ↑↑</strong>（標準 &lt;1.75），目前最需重點追蹤的數值</div></div>
+    </div>
+  </div>
+
+  <div class="card" style="background:var(--accent-light); border:1px solid rgba(45,90,142,0.15); margin-top:4px">
+    <div style="font-size:13px; font-weight:600; color:var(--accent); margin-bottom:8px">⚠️ 追蹤注意事項</div>
+    <ul style="font-size:13px; color:var(--text2); line-height:2; padding-left:1.2rem">
+      <li>出現心悸、手抖、體重驟降，提前聯繫門診</li>
+      <li>避免大量食用高碘食物（海帶、海藻）</li>
+      <li>充足睡眠、壓力管理有助免疫穩定</li>
+      <li>所有數值以曹心怡醫師判斷為準</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="nav">
+  <button class="nav-btn active" onclick="switchTab('home', this)">
+    <span class="nav-icon">🏠</span>首頁
+  </button>
+  <button class="nav-btn" onclick="switchTab('log', this)">
+    <span class="nav-icon">✏️</span>記錄
+  </button>
+  <button class="nav-btn" onclick="switchTab('ref', this)">
+    <span class="nav-icon">📖</span>指標說明
+  </button>
+</nav>
+
+<script>
+// Tab switching
+function switchTab(name, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  if (btn) btn.classList.add('active');
+}
+
+// Accordion
+function toggleRef(el) { el.classList.toggle('open'); }
+
+// Checkbox toggle
+function toggleCheck(id) {
+  var input = document.getElementById(id);
+  var box = document.getElementById(id + '-box');
+  var mark = document.getElementById(id + '-mark');
+  var checked = input.value === '1';
+  input.value = checked ? '0' : '1';
+  if (checked) {
+    box.classList.remove('checked');
+    mark.style.display = 'none';
+  } else {
+    box.classList.add('checked');
+    mark.style.display = '';
+  }
+  // Show/hide exercise detail
+  if (id === 'ex-check') {
+    document.getElementById('ex-detail').style.display = input.value === '1' ? 'block' : 'none';
+  }
+}
+
+// Set today's date
+(function() {
+  var today = new Date();
+  var y = today.getFullYear();
+  var m = String(today.getMonth() + 1).padStart(2, '0');
+  var d = String(today.getDate()).padStart(2, '0');
+  document.getElementById('log-date').value = y + '-' + m + '-' + d;
+})();
+
+// Storage
+var STORAGE_KEY = 'thyroid_logs_v2';
+var logs = [];
+try { logs = JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch(e) { logs = []; }
+
+function saveLogs() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(logs)); } catch(e) {} 
+}
+
+function addLog() {
+  var date = document.getElementById('log-date').value;
+  if (!date) { alert('請選擇日期'); return; }
+  var entry = {
+    id: Date.now(),
+    date: date,
+    breakfast: document.getElementById('food-breakfast').value.trim(),
+    lunch: document.getElementById('food-lunch').value.trim(),
+    dinner: document.getElementById('food-dinner').value.trim(),
+    sleepTime: document.getElementById('sleep-time').value,
+    wakeTime: document.getElementById('wake-time').value,
+    exercised: document.getElementById('ex-check').value === '1',
+    exerciseContent: document.getElementById('ex-content').value.trim(),
+    medD3: document.getElementById('med-d3').value === '1',
+    medFish: document.getElementById('med-fish').value === '1',
+    note: document.getElementById('log-note').value.trim()
+  };
+  var hasData = entry.breakfast || entry.lunch || entry.dinner || entry.sleepTime || entry.exercised || entry.medD3 || entry.medFish || entry.note;
+  if (!hasData) { alert('請至少填寫一項內容'); return; }
+  logs.unshift(entry);
+  saveLogs();
+  // Reset form
+  ['food-breakfast','food-lunch','food-dinner','ex-content','log-note'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['sleep-time','wake-time'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['ex-check','med-d3','med-fish'].forEach(function(id){
+    document.getElementById(id).value='0';
+    document.getElementById(id+'-box').classList.remove('checked');
+    document.getElementById(id+'-mark').style.display='none';
+  });
+  document.getElementById('ex-detail').style.display='none';
+  renderLogs();
+  document.getElementById('log-list').scrollIntoView({ behavior:'smooth' });
+}
+
+function deleteLog(id) {
+  if (!confirm('確定刪除這筆記錄？')) return;
+  logs = logs.filter(function(l){ return l.id !== id; });
+  saveLogs();
+  renderLogs();
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+function pill(label, color) {
+  var colors = { green:'background:#E8F5EE;color:#1E7A4A', blue:'background:#E8F0F9;color:#2D5A8E', gray:'background:#F0EDE8;color:#5A5A5A' };
+  return '<span style="font-size:11px;padding:2px 8px;border-radius:20px;font-weight:500;' + (colors[color]||colors.gray) + '">' + label + '</span>';
+}
+
+function renderLogs() {
+  var el = document.getElementById('log-list');
+  if (logs.length === 0) {
+    el.innerHTML = '<div class="empty-state"><span class="empty-icon">📭</span>尚無記錄<br><span style="font-size:12px">使用上方表單新增第一筆</span></div>';
+    return;
+  }
+  el.innerHTML = logs.map(function(l) {
+    var html = '<div class="log-entry">';
+    html += '<div class="log-entry-header"><span class="log-entry-date">' + l.date + '</span>';
+    html += '<button class="delete-btn" onclick="deleteLog(' + l.id + ')">✕</button></div>';
+
+    // Meals
+    if (l.breakfast || l.lunch || l.dinner) {
+      html += '<div class="log-field"><div class="log-field-label">🥗 飲食</div>';
+      if (l.breakfast) html += '<div class="log-field-val"><span style="color:var(--text3)">早餐</span> ' + escHtml(l.breakfast) + '</div>';
+      if (l.lunch) html += '<div class="log-field-val"><span style="color:var(--text3)">午餐</span> ' + escHtml(l.lunch) + '</div>';
+      if (l.dinner) html += '<div class="log-field-val"><span style="color:var(--text3)">晚餐</span> ' + escHtml(l.dinner) + '</div>';
+      html += '</div>';
+    }
+
+    // Sleep
+    if (l.sleepTime || l.wakeTime) {
+      var sleepStr = (l.sleepTime ? '就寢 ' + l.sleepTime : '') + (l.sleepTime && l.wakeTime ? '　' : '') + (l.wakeTime ? '起床 ' + l.wakeTime : '');
+      html += '<div class="log-field"><div class="log-field-label">🌙 作息</div><div class="log-field-val">' + escHtml(sleepStr) + '</div></div>';
+    }
+
+    // Exercise + meds pills
+    var tags = [];
+    if (l.exercised) { var exStr = '🏃 有運動' + (l.exerciseContent ? '：' + l.exerciseContent : ''); tags.push('<span style="font-size:12px;color:var(--ok)">' + escHtml(exStr) + '</span>'); }
+    else { tags.push('<span style="font-size:12px;color:var(--text3)">🏃 未運動</span>'); }
+    if (l.medD3) tags.push(pill('💊 D3 ✓','green'));
+    else tags.push(pill('💊 D3 —','gray'));
+    if (l.medFish) tags.push(pill('💊 魚油 ✓','green'));
+    else tags.push(pill('💊 魚油 —','gray'));
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">' + tags.join('') + '</div>';
+
+    // Note
+    if (l.note) html += '<div class="log-field" style="margin-top:8px"><div class="log-field-label">📋 備註</div><div class="log-field-val">' + escHtml(l.note) + '</div></div>';
+
+    html += '</div>';
+    return html;
+  }).join('');
+}
+
+renderLogs();
+</script>
+</body>
+</html>
